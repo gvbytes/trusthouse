@@ -1,0 +1,304 @@
+datasource db {
+  provider  = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  WORKER
+  HOUSEHOLD
+  COORDINATOR
+  ADMIN
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  FAILED
+  NEEDS_REVIEW
+}
+
+enum Skill {
+  COOK
+  CLEANER
+  BABYSITTER
+  CARETAKER
+}
+
+enum WorkerPlan {
+  BASIC
+  PLUS
+}
+
+enum HouseholdPlan {
+  BASIC
+  PLUS
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  PENDING
+}
+
+enum ReplacementStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  EXHAUSTED
+}
+
+enum PaymentType {
+  SUBSCRIPTION
+  WAGE
+  PAYOUT
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum RatingType {
+  WORKER_TO_HOUSEHOLD
+  HOUSEHOLD_TO_WORKER
+}
+
+enum NotificationType {
+  SMS
+  WHATSAPP
+  EMAIL
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum PoliceVerificationStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+model User {
+  id            String         @id @default(uuid())
+  phone         String         @unique
+  email         String?        @unique
+  role          Role
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  worker        Worker?
+  household     Household?
+  auditLogs     AuditLog[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Worker {
+  id                       String                   @id @default(uuid())
+  userId                   String                   @unique
+  user                     User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                     String
+  skills                   Skill[]
+  rating                   Float                    @default(5.0)
+  trustScore               Float                    @default(50.0)
+  hourlyRate               Float                    @default(100.0)
+  kycStatus                KycStatus                @default(PENDING)
+  personaInquiryId         String?
+  aadhaarLast4             String? // Encrypted AES-256-GCM
+  panNumber                String? // Encrypted AES-256-GCM
+  bankAccount              String? // Encrypted AES-256-GCM
+  lat                      Float
+  lng                      Float
+  lastActive               DateTime?
+  onCall                   Boolean                  @default(true)
+  plan                     WorkerPlan               @default(BASIC)
+  policeVerificationStatus PoliceVerificationStatus @default(PENDING)
+  assignments              Assignment[]
+  attendances              Attendance[]
+  replacementsAsAbsent     Replacement[]            @relation("AbsentWorker")
+  replacementsAsCandidate  Replacement[]            @relation("CandidateWorker")
+  payments                 Payment[]
+  ratingsGiven             Rating[]                 @relation("RatingsGivenByWorker")
+  ratingsReceived          Rating[]                 @relation("RatingsReceivedByWorker")
+
+  @@map("workers")
+}
+
+model Household {
+  id              String        @id @default(uuid())
+  userId          String        @unique
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  trustScore      Float         @default(50.0)
+  plan            HouseholdPlan @default(BASIC)
+  lat             Float
+  lng             Float
+  createdAt       DateTime      @default(now())
+  assignments     Assignment[]
+  replacements    Replacement[]
+  payments        Payment[]
+  ratingsGiven    Rating[]      @relation("RatingsGivenByHousehold")
+  ratingsReceived Rating[]      @relation("RatingsReceivedByHousehold")
+
+  @@map("households")
+}
+
+model Assignment {
+  id                      String           @id @default(uuid())
+  householdId             String
+  household               Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  workerId                String
+  worker                  Worker           @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  status                  AssignmentStatus @default(ACTIVE)
+  hourlyRate              Float
+  commissionWorkerRate    Float            @default(1.5)
+  commissionHouseholdRate Float            @default(1.4)
+  startDate               DateTime         @default(now())
+  endDate                 DateTime?
+  createdAt               DateTime         @default(now())
+  attendances             Attendance[]
+  replacements            Replacement[]
+  ratings                 Rating[]
+
+  @@map("assignments")
+}
+
+model Attendance {
+  id           String           @id @default(uuid())
+  assignmentId String
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  workerId     String
+  worker       Worker           @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  date         DateTime
+  checkedIn    DateTime?
+  checkedOut   DateTime?
+  status       AttendanceStatus @default(PENDING)
+  createdAt    DateTime         @default(now())
+
+  @@map("attendances")
+}
+
+model Replacement {
+  id                String            @id @default(uuid())
+  assignmentId      String
+  assignment        Assignment        @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  absentWorkerId    String
+  absentWorker      Worker            @relation("AbsentWorker", fields: [absentWorkerId], references: [id], onDelete: Cascade)
+  candidateWorkerId String?
+  candidateWorker   Worker?           @relation("CandidateWorker", fields: [candidateWorkerId], references: [id], onDelete: SetNull)
+  householdId       String
+  household         Household         @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  status            ReplacementStatus @default(PENDING)
+  offerTime         DateTime          @default(now())
+  responseTime      DateTime?
+  createdAt         DateTime          @default(now())
+
+  @@map("replacements")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  householdId       String?
+  household         Household?    @relation(fields: [householdId], references: [id], onDelete: SetNull)
+  workerId          String?
+  worker            Worker?       @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  amount            Float
+  type              PaymentType
+  status            PaymentStatus @default(PENDING)
+  razorpayOrderId   String?
+  razorpayPaymentId String?       @unique
+  razorpayPayoutId  String?       @unique
+  commission        Float         @default(0.0)
+  gst               Float         @default(0.0)
+  invoiceUrl        String?
+  createdAt         DateTime      @default(now())
+
+  @@map("payments")
+}
+
+model Rating {
+  id              String      @id @default(uuid())
+  assignmentId    String
+  assignment      Assignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  type            RatingType
+  score           Float
+  review          String?
+  fromWorkerId    String?
+  fromWorker      Worker?     @relation("RatingsGivenByWorker", fields: [fromWorkerId], references: [id], onDelete: SetNull)
+  toWorkerId      String?
+  toWorker        Worker?     @relation("RatingsReceivedByWorker", fields: [toWorkerId], references: [id], onDelete: SetNull)
+  fromHouseholdId String?
+  fromHousehold   Household?  @relation("RatingsGivenByHousehold", fields: [fromHouseholdId], references: [id], onDelete: SetNull)
+  toHouseholdId   String?
+  toHousehold     Household?  @relation("RatingsReceivedByHousehold", fields: [toHouseholdId], references: [id], onDelete: SetNull)
+  createdAt       DateTime    @default(now())
+
+  @@map("ratings")
+}
+
+model Notification {
+  id        String             @id @default(uuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  status    NotificationStatus @default(PENDING)
+  title     String
+  message   String
+  sentAt    DateTime?
+  createdAt DateTime           @default(now())
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  resource  String
+  details   String
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model MetricsSnapshot {
+  id                     String   @id @default(uuid())
+  date                   DateTime @default(now())
+  totalWorkers           Int
+  totalHouseholds        Int
+  activeAssignments      Int
+  totalRevenue           Float
+  totalPayouts           Float
+  replacementSuccessRate Float
+  createdAt              DateTime @default(now())
+
+  @@map("metrics_snapshots")
+}
+
+model OtpSession {
+  phone        String   @id
+  hashedOtp    String
+  expiresAt    DateTime
+  sendCount    Int      @default(0)
+  attemptCount Int      @default(0)
+  windowStart  DateTime
+
+  @@map("otp_sessions")
+}
