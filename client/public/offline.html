@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline — TrustHouse</title>
+  <style>
+    body {
+      background-color: #f7f3ec;
+      color: #0d2818;
+      font-family: 'Outfit', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+      padding: 20px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.4);
+      border: 1px solid rgba(13, 40, 24, 0.1);
+      border-radius: 16px;
+      padding: 40px 20px;
+      max-width: 400px;
+      box-shadow: 0 8px 32px 0 rgba(13, 40, 24, 0.05);
+    }
+    h1 {
+      font-size: 24px;
+      margin: 0 0 10px 0;
+    }
+    p {
+      font-size: 16px;
+      opacity: 0.8;
+      margin: 0 0 20px 0;
+    }
+    button {
+      background-color: #0d2818;
+      color: #f7f3ec;
+      border: none;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background-color: #c9a84c;
+      color: #0d2818;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 20px; color: #c44b2b;">
+      <line x1="1" y1="1" x2="23" y2="23"></line>
+      <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.5"></path>
+      <path d="M5 12.5a10.94 10.94 0 0 1 5.17-2.39"></path>
+      <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+      <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+      <path d="M8.53 16.11a5.5 5.5 0 0 1 6.95 0"></path>
+      <line x1="12" y1="20" x2="12.01" y2="20"></line>
+    </svg>
+    <h1>You are currently offline</h1>
+    <p>Please check your internet connection. TrustHouse requires an active connection to verify identities and schedule shifts.</p>
+    <button onclick="window.location.reload()">Retry Connection</button>
+  </div>
+</body>
+</html>
