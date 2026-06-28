@@ -1,0 +1,23 @@
+{
+  "short_name": "TrustHouse",
+  "name": "TrustHouse — India's Identity & Trust Platform",
+  "description": "Verifiable digital identity, instant replacements, and secure payouts for India's household workers.",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f7f3ec",
+  "theme_color": "#0d2818",
+  "display": "standalone",
+  "orientation": "portrait"
+}
